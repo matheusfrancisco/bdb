@@ -105,9 +105,50 @@ struct BTreePageHeader {
     hf_offset: u16,
     level: u8,
     ty: u8,
+    offsets: Vec<u16>,
+}
+
+#[derive(Debug, Clone)]
+enum Entry<'a> {
+    KeyData {
+        length: u16,
+        data: &'a [u8],
+    },
+    Internal {
+        length: u16,
+        pgno: u32,
+        nrecs: u32,
+        data: &'a [u8],
+    },
+    Overflow {
+        pgno: u32,
+        tlen: u32,
+    },
+}
+
+impl<'a> Entry<'a> {
+    fn new(buffer: &'a [u8]) -> Self {
+        if buffer.len() < 3 {
+            panic!("Invalid entry");
+        }
+        match buffer[2] {
+            1 => {
+                let length = u16::from_le_bytes(buffer[0..2].try_into().unwrap());
+                Self::KeyData {
+                    length,
+                    data: &buffer[3..length as usize],
+                }
+            }
+            _ => unimplemented!(),
+        }
+    }
 }
 
 impl BTreePageHeader {
+    const TYPE_META: u8 = 9;
+    const TYPE_INERNAL: u8 = 3;
+    const TYPE_LEAF: u8 = 5;
+
     fn new(page: &[u8]) -> Self {
         if page.len() < 4096 {
             panic!("Invalid page size {}", page.len());
@@ -121,9 +162,15 @@ impl BTreePageHeader {
         let level = page[24];
         let ty = page[25];
 
-        if !(ty == 9 || ty == 3 || ty == 5) {
+        if !(ty == Self::TYPE_META || ty == Self::TYPE_LEAF || ty == Self::TYPE_INERNAL) {
             panic!("Invalid page type {ty}");
         }
+
+        let offsets = (0..entries as usize)
+            .map(|e| {
+                u16::from_le_bytes(page[(26 + 2 * e)..(28 + 2 * e)].try_into().unwrap()) - hf_offset
+            })
+            .collect();
 
         Self {
             lsn,
@@ -134,6 +181,7 @@ impl BTreePageHeader {
             hf_offset,
             level,
             ty,
+            offsets,
         }
     }
 }
@@ -145,8 +193,17 @@ fn main() {
     let metadata_contents = &contents[0..512];
     let metadata = Metadata::new(metadata_contents);
     println!("{metadata:#?}");
-    for chunk in contents[4096..].chunks(4096) {
-        let header = BTreePageHeader::new(chunk);
-        println!("{header:#?}");
+    for page in contents[4096..].chunks(4096) {
+        let header = BTreePageHeader::new(page);
+        if header.ty == BTreePageHeader::TYPE_LEAF {
+            for pair in header.offsets.chunks(2) {
+                let key_offset = (pair[0] + header.hf_offset) as usize;
+                let value_offset = (pair[1] + header.hf_offset) as usize;
+
+                let key = Entry::new(&page[key_offset..]);
+                let value = Entry::new(&page[value_offset..]);
+                println!("Key: {:?}, --> Value: {:?}", key, value);
+            }
+        }
     }
 }
