@@ -18,6 +18,38 @@ impl<'a> Page<'a> {
         Self { header, data }
     }
 
+    pub fn get_entry(&self, index: usize) -> Option<Entry<'a>> {
+        let PageHeader::BTree { entries, level, .. } = self.header else {
+            return None;
+        };
+
+        if index >= entries as usize {
+            return None;
+        }
+
+        let prev_offset = if index == 0 {
+            4096
+        } else {
+            self.get_offset(index - 1)
+        };
+        let offset = self.get_offset(index);
+        let buffer = &self.data[offset..prev_offset];
+        let entry = if level == 1 {
+            Entry::new_keydata(buffer)
+        } else {
+            Entry::new_internal(buffer)
+        };
+        Some(entry)
+    }
+
+    fn get_offset(&self, index: usize) -> usize {
+        u16::from_le_bytes(
+            self.data[(26 + 2 * index)..(28 + 2 * index)]
+                .try_into()
+                .unwrap(),
+        ) as usize
+    }
+
     pub fn entries(&'a self) -> impl Iterator<Item = Entry<'a>> {
         EntryInterator::new(self)
     }
@@ -32,6 +64,15 @@ impl<'a> Page<'a> {
 
     pub fn is_internal(&self) -> bool {
         !(self.is_metadata() || self.is_leaf())
+    }
+
+    pub fn next_page_number(&self) -> Option<u32> {
+        if let PageHeader::BTree { next_pgno, .. } = self.header {
+            if next_pgno != 0 {
+                return Some(next_pgno);
+            }
+        }
+        None
     }
 }
 
@@ -89,6 +130,7 @@ impl<'a> Debug for Page<'a> {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Debug, derive_more::IsVariant)]
 pub enum PageHeader<'a> {
     Metadata {

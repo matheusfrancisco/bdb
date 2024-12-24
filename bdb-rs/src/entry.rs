@@ -1,16 +1,46 @@
+use std::{fmt::Display, str::from_utf8};
+
 #[derive(Debug, Clone)]
 pub enum Entry<'a> {
     KeyData {
-        length: u16,
         data: &'a [u8],
     },
     Internal {
-        length: u16,
         ty: u8,
         pgno: u32,
         nrecs: u32,
         data: &'a [u8],
     },
+}
+
+impl<'a> Display for Entry<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::KeyData { data, .. } => {
+                if let Ok(s) = from_utf8(data) {
+                    write!(f, "{s}")
+                } else {
+                    write!(f, "({} binary data)", data.len())
+                }
+            }
+            Self::Internal {
+                ty,
+                pgno,
+                nrecs,
+                data,
+            } => {
+                let key = if let Ok(s) = from_utf8(data) {
+                    s
+                } else {
+                    &format!("({} binary data)", data.len())
+                };
+                write!(
+                    f,
+                    "Type: {ty}, Page: {pgno}, Records: {nrecs}, Minimum key: {key}"
+                )
+            }
+        }
+    }
 }
 
 impl<'a> Entry<'a> {
@@ -24,7 +54,6 @@ impl<'a> Entry<'a> {
 
         let length = u16::from_le_bytes(buffer[0..2].try_into().unwrap());
         Self::KeyData {
-            length,
             data: &buffer[3..length as usize],
         }
     }
@@ -39,7 +68,6 @@ impl<'a> Entry<'a> {
         let nrecs = u32::from_le_bytes(buffer[8..12].try_into().unwrap());
         let data = &buffer[12..(length + 12) as usize];
         Self::Internal {
-            length,
             ty,
             pgno,
             nrecs,
