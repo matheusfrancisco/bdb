@@ -32,7 +32,7 @@ from BerkeleyDB will be applicable to other, more complicated B-Trees.
 
 This is the metapage
 
-![metapage](./metapage.jpeg)
+![metapage](./img/metapage.jpeg)
 
 The gap start on byte 460.
 The entire structure is 512 bytes in size. 
@@ -53,7 +53,7 @@ The page number of the root of the btree. Reads of the btree should start from t
 
 ### BTree page
 
-![btree](./btree.jpeg)
+![btree](./img/btree.jpeg)
 
 The rest of the page is used to hold the page entries, which is the subject of our next step. For now, we only focus on the page headers. No bolding of fields this time, as all of them will be used.
 
@@ -86,7 +86,7 @@ The DB meta page is type 9. An internal node is type 3. A leaf node is type 5. A
 In our page format, the header is followed by an array of offsets. The array is of length entries. Each entry in the array is two bytes, and gives an offset at which the entry can be found. Each offset is specified using a base of hf_offset. Given a pointer to a page, the first entry would be at hf_offset + offsets[0] (iff entries > 0).
 Note that this means that offsets[0] will be greater than offsets[1], as the first key written goes to the very end of the page.
 
-![page](./page.jpeg)
+![page](./img/page.jpeg)
 
 And i in the above after the gap is hf_offset.
 It can be quite helpful to extend your code which prints the header format to include the offsets array, and a hexdump from hf_offset until the end of the page.
@@ -99,7 +99,7 @@ There’s three formats for entries: KeyDataEntry, InternalEntry and OverflowEnt
 The type field for all three is in the same position for all entries. KeyDataEntry has a type code of 1. OverflowEntry has a type code of 3. Yet InternalEntry also has a type code of 1. This means that one cannot dispatch purely on the type code to determine what sort of entry it is. One also needs to maintain the knowledge of if the current page is an internal page in the BTree (then type==1 means InternalEntry), or if the current page is a leaf page (then type==1 means KeyDataEntry).
 
 #### KeyDataEntry
-![key](./key.jpeg)
+![key](./img/key.jpeg)
 
 00-01
 The length of the variable sized data field.
@@ -111,7 +111,7 @@ The type code for this entry. Is 1 for KeyDataEntry.
 The variably sized data for this entry.
 
 #### InternalEntry
-![internal](./internal.jpeg)
+![internal](./img/internal.jpeg)
 00-01
 Key/data item length.
 
@@ -140,7 +140,7 @@ not used in this implementation
 Examining the entries in an internal B-Tree page is 
 going to yield InternalEntrys that look like:
 
-![algo](algo1.jpeg)
+![algo](./img/algo1.jpeg)
 
 And the goal is to find the correct next page to read by comparing the target key against the data in the InternalEntry. Your goal is to find the maximum key that’s less than or equal to your target key. If get() was provided a target key of NNNN, then the goal is to identify offset 60 of PgNo: 4, Data: MMMM as the proper entry, and repeat the search on page 4 next. One could binary search this, but the offsets are maintained in order, and so I found a linear scan the easiest.
 
@@ -161,7 +161,7 @@ this was ported to rust
 
 https://transactional.blog/building-berkeleydb/point-reads
 
-[leaf](./algo2.jpeg)
+[leaf](./img/algo2.jpeg)
 
 Recall that there will always be an even number of offsets and entries on a leaf page, with the first entry being a key, and the second being the data. Iterate over all the entries in pairs (a tumbling window of size 2), and if pair[0].data == target_key, then return pair[1].data as the found key. If was no matching key, then the key doesn’t exist in the B-Tree.
 
