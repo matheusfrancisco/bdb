@@ -1,3 +1,4 @@
+use crate::entry::Entry;
 use crate::page::Page;
 use std::fs;
 use std::path::Path;
@@ -19,5 +20,10 @@ impl Database {
     // iterate over the raw pages of the database
     pub fn raw_pages(&self) -> impl Iterator<Item = &[u8]> {
         self.buffer.chunks(4096)
+    }
+
+    pub fn walk(&self) -> impl Iterator<Item = (Entry<'a>, Entry<'a>)> {
+        todo!()
+
     }
 }

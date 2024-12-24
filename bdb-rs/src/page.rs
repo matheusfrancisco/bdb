@@ -21,6 +21,18 @@ impl<'a> Page<'a> {
     pub fn entries(&'a self) -> impl Iterator<Item = Entry<'a>> {
         EntryInterator::new(self)
     }
+
+    pub fn is_metadata(&self) -> bool {
+        self.header.is_metadata()
+    }
+
+    pub fn is_leaf(&self) -> bool {
+        matches!(self.header, PageHeader::BTree { level: 1, .. })
+    }
+
+    pub fn is_internal(&self) -> bool {
+        !(self.is_metadata() || self.is_leaf())
+    }
 }
 
 struct EntryInterator<'a> {

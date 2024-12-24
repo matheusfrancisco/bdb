@@ -1,7 +1,7 @@
 use std::env;
 mod database;
-mod page;
 mod entry;
+mod page;
 
 use database::Database;
 
@@ -14,8 +14,13 @@ fn main() {
     let db = Database::open(filename);
     for page in db.pages() {
         println!("Page: {:?}", page.header);
-        for entry in page.entries() {
-            println!("Entry: {:?}", entry);
+        for (idx, entry) in page.entries().enumerate() {
+            if page.is_leaf() {
+                let key_or_value = if idx % 2 == 0 { "Key" } else { "Value" };
+                println!("{key_or_value} {:?}", entry);
+            } else {
+                println!("  Internal {:?}", entry);
+            }
         }
     }
 }
