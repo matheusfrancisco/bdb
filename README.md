@@ -134,7 +134,7 @@ Variable length key/data item
 not used in this implementation
 
 
-## Read data in C 
+## Read data
 ### Algorithm
 
 Examining the entries in an internal B-Tree page is 
