@@ -32,7 +32,7 @@ from BerkeleyDB will be applicable to other, more complicated B-Trees.
 
 This is the metapage
 
-![metapage](./metapage.svg)
+![metapage](./metapage.jpeg)
 
 The gap start on byte 460.
 The entire structure is 512 bytes in size. 
@@ -53,7 +53,7 @@ The page number of the root of the btree. Reads of the btree should start from t
 
 ### BTree page
 
-![btree](./btree.svg)
+![btree](./btree.jpeg)
 
 The rest of the page is used to hold the page entries, which is the subject of our next step. For now, we only focus on the page headers. No bolding of fields this time, as all of them will be used.
 
@@ -86,7 +86,7 @@ The DB meta page is type 9. An internal node is type 3. A leaf node is type 5. A
 In our page format, the header is followed by an array of offsets. The array is of length entries. Each entry in the array is two bytes, and gives an offset at which the entry can be found. Each offset is specified using a base of hf_offset. Given a pointer to a page, the first entry would be at hf_offset + offsets[0] (iff entries > 0).
 Note that this means that offsets[0] will be greater than offsets[1], as the first key written goes to the very end of the page.
 
-![page](./page.svg)
+![page](./page.jpeg)
 
 And i in the above after the gap is hf_offset.
 It can be quite helpful to extend your code which prints the header format to include the offsets array, and a hexdump from hf_offset until the end of the page.
