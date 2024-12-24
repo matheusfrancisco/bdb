@@ -86,7 +86,7 @@ The DB meta page is type 9. An internal node is type 3. A leaf node is type 5. A
 
 
 
-![page](./page.svg)
+![page](./page.png)
 
 # References
 
